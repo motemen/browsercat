@@ -34,23 +34,25 @@ conn.onmessage = function (e) {
 
 type unit struct{}
 
+type chunk []byte
+
 type Tee struct {
-	Outs map[chan<- string]unit
+	Outs map[chan<- chunk]unit
 	cond *sync.Cond
 }
 
 func newTee() *Tee {
 	return &Tee{
-		Outs: map[chan<- string]unit{},
+		Outs: map[chan<- chunk]unit{},
 		cond: sync.NewCond(&sync.Mutex{}),
 	}
 }
 
-func (t *Tee) NewOutChan() <-chan string {
+func (t *Tee) NewOutChan() <-chan chunk {
 	t.cond.L.Lock()
 	defer t.cond.L.Unlock()
 
-	ch := make(chan string)
+	ch := make(chan chunk)
 
 	t.Outs[ch] = unit{}
 	t.cond.Broadcast()
@@ -68,13 +70,19 @@ func (t *Tee) sync() {
 	}
 }
 
-func (t *Tee) Put(data string) {
+func (t *Tee) Write(p []byte) (int, error) {
 	t.sync()
 
-	log.Printf("Sending %d bytes to %d chan(s)", len(data), len(t.Outs))
+	log.Printf("sending %d bytes to %d chan(s)", len(p), len(t.Outs))
+
+	data := make([]byte, len(p))
+	copy(data, p)
+
 	for ch := range t.Outs {
-		ch <- data
+		ch <- chunk(data)
 	}
+
+	return len(p), nil
 }
 
 func (t *Tee) Close() {
@@ -83,11 +91,25 @@ func (t *Tee) Close() {
 	}
 }
 
-func readLoop(r io.Reader, t *Tee, done chan<- unit) {
+type Broker struct {
+	Reader io.Reader
+	Writer io.Writer
+	Done   chan unit
+}
+
+func newBroker(r io.Reader, w io.Writer) *Broker {
+	return &Broker{
+		Reader: r,
+		Writer: w,
+		Done:   make(chan unit),
+	}
+}
+
+func (l Broker) Do() {
 	buf := make([]byte, 4096)
 
 	for {
-		n, err := r.Read(buf)
+		n, err := l.Reader.Read(buf)
 		if err != nil {
 			if err != io.EOF {
 				log.Printf("fatal: %s", err)
@@ -95,12 +117,12 @@ func readLoop(r io.Reader, t *Tee, done chan<- unit) {
 			break
 		}
 
-		t.Put(string(buf[0:n]))
+		l.Writer.Write(buf[0:n])
 	}
 
 	log.Println("end")
 
-	done <- unit{}
+	l.Done <- unit{}
 }
 
 type Message struct {
@@ -108,15 +130,15 @@ type Message struct {
 	Data string `json:"data"`
 }
 
-func newHTTPServer(t *Tee) *httptest.Server {
+func newHTTPServer(tee *Tee) *httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, mainHTML)
 	})
 	mux.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
-		ch := t.NewOutChan()
+		ch := tee.NewOutChan()
 		for bytes := range ch {
-			message := Message{Type: "text", Data: bytes}
+			message := Message{Type: "text", Data: string(bytes)}
 			websocket.JSON.Send(ws, message)
 		}
 	}))
@@ -125,22 +147,22 @@ func newHTTPServer(t *Tee) *httptest.Server {
 }
 
 func main() {
-	t := newTee()
-	readDone := make(chan unit)
+	tee := newTee()
 
-	go readLoop(os.Stdin, t, readDone)
+	broker := newBroker(os.Stdin, tee)
+	go broker.Do()
 
-	ts := newHTTPServer(t)
+	ts := newHTTPServer(tee)
 	defer ts.Close()
 
 	fmt.Println(ts.URL)
 	openBrowser(ts.URL)
 
-	<-readDone
+	<-broker.Done
 
 	log.Printf("done received")
 
-	t.Close()
+	tee.Close()
 }
 
 func openBrowser(url string) error {
