@@ -37,35 +37,43 @@ type unit struct{}
 type chunk []byte
 
 type Tee struct {
-	Outs map[chan<- chunk]unit
+	outs map[chan chunk]unit
 	cond *sync.Cond
 }
 
 func newTee() *Tee {
 	return &Tee{
-		Outs: map[chan<- chunk]unit{},
+		outs: map[chan chunk]unit{},
 		cond: sync.NewCond(&sync.Mutex{}),
 	}
 }
 
-func (t *Tee) NewOutChan() <-chan chunk {
+func (t *Tee) NewOutChan() chan chunk {
 	t.cond.L.Lock()
 	defer t.cond.L.Unlock()
 
 	ch := make(chan chunk)
 
-	t.Outs[ch] = unit{}
+	t.outs[ch] = unit{}
 	t.cond.Broadcast()
 
 	return ch
 }
 
-func (t *Tee) sync() {
-	// Wait until there is at least one out chan
+func (t *Tee) RemoveOutChan(ch chan chunk) {
 	t.cond.L.Lock()
 	defer t.cond.L.Unlock()
 
-	if len(t.Outs) == 0 {
+	delete(t.outs, ch)
+}
+
+// Wait until there is at least one out chan
+func (t *Tee) sync() {
+	t.cond.L.Lock()
+	defer t.cond.L.Unlock()
+
+	if len(t.outs) == 0 {
+		log.Printf("tee: no out chans; waiting for one")
 		t.cond.Wait()
 	}
 }
@@ -73,56 +81,24 @@ func (t *Tee) sync() {
 func (t *Tee) Write(p []byte) (int, error) {
 	t.sync()
 
-	log.Printf("sending %d bytes to %d chan(s)", len(p), len(t.Outs))
+	log.Printf("tee: sending %d bytes to %d chan(s)", len(p), len(t.outs))
 
 	data := make([]byte, len(p))
 	copy(data, p)
 
-	for ch := range t.Outs {
+	for ch := range t.outs {
 		ch <- chunk(data)
 	}
 
 	return len(p), nil
 }
 
-func (t *Tee) Close() {
-	for ch := range t.Outs {
+func (t *Tee) Close() error {
+	for ch := range t.outs {
 		close(ch)
 	}
-}
 
-type Broker struct {
-	Reader io.Reader
-	Writer io.Writer
-	Done   chan unit
-}
-
-func newBroker(r io.Reader, w io.Writer) *Broker {
-	return &Broker{
-		Reader: r,
-		Writer: w,
-		Done:   make(chan unit),
-	}
-}
-
-func (l Broker) Do() {
-	buf := make([]byte, 4096)
-
-	for {
-		n, err := l.Reader.Read(buf)
-		if err != nil {
-			if err != io.EOF {
-				log.Printf("fatal: %s", err)
-			}
-			break
-		}
-
-		l.Writer.Write(buf[0:n])
-	}
-
-	log.Println("end")
-
-	l.Done <- unit{}
+	return nil
 }
 
 type Message struct {
@@ -132,15 +108,26 @@ type Message struct {
 
 func newHTTPServer(tee *Tee) *httptest.Server {
 	mux := http.NewServeMux()
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, mainHTML)
 	})
+
 	mux.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
 		ch := tee.NewOutChan()
+
+		log.Printf("websocket: new client: %s", ws.RemoteAddr())
+
 		for bytes := range ch {
 			message := Message{Type: "text", Data: string(bytes)}
-			websocket.JSON.Send(ws, message)
+			err := websocket.JSON.Send(ws, message)
+			if err != nil {
+				log.Printf("websocket: error: %s", err)
+				break
+			}
 		}
+
+		tee.RemoveOutChan(ch)
 	}))
 
 	return httptest.NewServer(mux)
@@ -149,18 +136,18 @@ func newHTTPServer(tee *Tee) *httptest.Server {
 func main() {
 	tee := newTee()
 
-	broker := newBroker(os.Stdin, tee)
-	go broker.Do()
+	server := newHTTPServer(tee)
+	defer server.Close()
 
-	ts := newHTTPServer(tee)
-	defer ts.Close()
+	fmt.Println(server.URL)
+	openBrowser(server.URL)
 
-	fmt.Println(ts.URL)
-	openBrowser(ts.URL)
+	n, err := io.Copy(tee, os.Stdin)
 
-	<-broker.Done
-
-	log.Printf("done received")
+	log.Printf("main: copying done, sent %d bytes", n)
+	if err != nil {
+		log.Printf("main: error: %s", err)
+	}
 
 	tee.Close()
 }
