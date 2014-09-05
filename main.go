@@ -15,20 +15,13 @@ import (
 
 var mainHTML = `<!DOCTYPE html>
 <html>
-<head></head>
+<style>
+.foreground-yellow {
+  color: yellow;
+}
+</style>
 <body><pre id="content"></pre></body>
-<script>
-var content = document.getElementById('content');
-var conn = new WebSocket('ws://' + location.host + '/ws');
-conn.onmessage = function (e) {
-  var message = JSON.parse(e.data);
-  if (message.type === 'text') {
-    content.innerText += message.data;
-  } else {
-    console.log(message);
-  }
-};
-</script>
+<script src="/js"></script>
 </html>
 `
 
@@ -111,6 +104,15 @@ func newHTTPServer(tee *Tee) *httptest.Server {
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, mainHTML)
+	})
+
+	mux.HandleFunc("/js", func(w http.ResponseWriter, r *http.Request) {
+		content, err := Asset("js/all.js")
+		if err != nil {
+			w.WriteHeader(500)
+		} else {
+			w.Write(content)
+		}
 	})
 
 	mux.Handle("/ws", websocket.Handler(func(ws *websocket.Conn) {
