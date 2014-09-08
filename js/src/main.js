@@ -1,11 +1,11 @@
 'use strict';
 
-var Parser = require('../../modules/ansi-sgr-parser');
+var Parser = require('ansi-sgr-parser');
 
 var parser = new Parser();
 
 var display = {
-  element: null
+  element: null,
 
   rootElement: document.getElementById('content'),
 
@@ -28,6 +28,7 @@ var display = {
       } else {
         var span = document.createElement('span');
         part.attrs.forEach(function (attr) {
+          if (!attr) return;
           span.classList.add(attr.replace(/ /g, '-'));
         });
         element.appendChild(span);

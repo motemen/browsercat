@@ -16,8 +16,30 @@ import (
 var mainHTML = `<!DOCTYPE html>
 <html>
 <style>
+body {
+  background-color: rgb(30,30,30);
+  color: rgb(247,246,236);
+}
+.foreground-red {
+	color: rgb(207,63,97);
+}
+.foreground-green {
+	color: rgb(123,183,91);
+}
 .foreground-yellow {
-  color: yellow;
+	color: rgb(233,179,42);
+}
+.foreground-blue {
+	color: rgb(76,154,212);
+}
+.foreground-magenta {
+	color: rgb(165,127,196);
+}
+.foreground-cyan {
+	color: rgb(56,154,173);
+}
+.foreground-white {
+	color: rgb(250,250,246);
 }
 </style>
 <body><pre id="content"></pre></body>

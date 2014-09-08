@@ -1,0 +1,14 @@
+{
+  "name": "browsercat",
+  "version": "0.0.0",
+  "description": "",
+  "author": "motemen <motemen@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "ansi-sgr-parser": "git://github.com/motemen/ansi-sgr-parser.git"
+  },
+  "devDependencies": {
+    "browserify": "^5.11.1"
+  }
+}
