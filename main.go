@@ -26,6 +26,14 @@ body {
 .foreground-green {
 	color: rgb(123,183,91);
 }
+.foreground-green .invert {
+	background-color: rgb(123,183,91);
+	color: rgb(30,30,30);
+}
+.foreground-green .invert .no-invert {
+	color: rgb(123,183,91);
+	background-color: rgb(30,30,30);
+}
 .foreground-yellow {
 	color: rgb(233,179,42);
 }
@@ -129,8 +137,9 @@ func newHTTPServer(tee *Tee) *httptest.Server {
 	})
 
 	mux.HandleFunc("/js", func(w http.ResponseWriter, r *http.Request) {
-		content, err := Asset("js/all.js")
+		content, err := Asset("main.js")
 		if err != nil {
+			log.Printf("server: could not load asset main.js: %s", err)
 			w.WriteHeader(500)
 		} else {
 			w.Write(content)

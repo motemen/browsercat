@@ -3,17 +3,28 @@ NPM_BIN = $(shell npm bin)
 browsercat: main.go bindata.go
 	go build
 
-bindata.go: js/src/main.js node_modules/ansi-sgr-parser/index.js $(NPM_BIN)/browserify
-	$(NPM_BIN)/browserify js/src/main.js > js/all.js
-	go-bindata -ignore=src js/
+bindata.go: assets/main.js npm
+	go-bindata -prefix=assets/ assets/
 
-node_modules/ansi-sgr-parser/index.js:
-	npm install
+assets/main.js: assets
+	$(NPM_BIN)/browserify js/main.js > assets/main.js
 
-$(NPM_BIN)/browserify:
+assets/main.css: assets
+	$(NPM_BIN)/browserify js/main.js > assets/main.js
+
+assets:
+	mkdir -p assets
+
+npm:
 	npm install
 
 install: main.go bindata.go
 	go install
 
-.PHONY: install
+clean:
+	rm -f browsercat bindata.go
+
+realclean: clean
+	rm -rf node_modules
+
+.PHONY: npm install clean realclean
