@@ -13,47 +13,21 @@ import (
 	"code.google.com/p/go.net/websocket"
 )
 
-var mainHTML = `<!DOCTYPE html>
+var mainHTML string
+
+func init() {
+	styles, err := Asset("main.css")
+	if err != nil {
+		panic(err)
+	}
+
+	mainHTML = `<!DOCTYPE html>
 <html>
-<style>
-body {
-  background-color: rgb(30,30,30);
-  color: rgb(247,246,236);
-}
-.foreground-red {
-	color: rgb(207,63,97);
-}
-.foreground-green {
-	color: rgb(123,183,91);
-}
-.foreground-green .invert {
-	background-color: rgb(123,183,91);
-	color: rgb(30,30,30);
-}
-.foreground-green .invert .no-invert {
-	color: rgb(123,183,91);
-	background-color: rgb(30,30,30);
-}
-.foreground-yellow {
-	color: rgb(233,179,42);
-}
-.foreground-blue {
-	color: rgb(76,154,212);
-}
-.foreground-magenta {
-	color: rgb(165,127,196);
-}
-.foreground-cyan {
-	color: rgb(56,154,173);
-}
-.foreground-white {
-	color: rgb(250,250,246);
-}
-</style>
+<style>` + string(styles) + `</style>
 <body><pre id="content"></pre></body>
 <script src="/js"></script>
-</html>
-`
+</html>`
+}
 
 type unit struct{}
 

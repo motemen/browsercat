@@ -1,0 +1,22 @@
+@import "colors";
+
+body {
+  color: $foreground;
+  background-color: $background;
+}
+
+@each $name,$color in $colors {
+  .foreground-#{$name} {
+    color: $color;
+
+    .invert {
+      background-color: $color;
+      color: $background;
+
+      .no-invert {
+        color: $color;
+        background-color: $background;
+      }
+    }
+  }
+}

@@ -3,14 +3,14 @@ NPM_BIN = $(shell npm bin)
 browsercat: main.go bindata.go
 	go build
 
-bindata.go: assets/main.js node_modules
+bindata.go: assets/main.js assets/main.css
 	go-bindata -prefix=assets/ assets/
 
-assets/main.js: assets
+assets/main.js: assets node_modules
 	$(NPM_BIN)/browserify js/main.js > assets/main.js
 
 assets/main.css: assets
-	$(NPM_BIN)/browserify js/main.js > assets/main.js
+	scss style/main.scss > assets/main.css
 
 assets:
 	mkdir -p assets
@@ -22,7 +22,7 @@ install: main.go bindata.go
 	go install
 
 clean:
-	rm -f browsercat bindata.go
+	rm -rf browsercat bindata.go assets/
 
 realclean: clean
 	rm -rf node_modules
