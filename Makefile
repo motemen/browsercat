@@ -3,6 +3,8 @@ NPM_BIN = $(shell npm bin)
 browsercat: main.go bindata.go
 	go build
 
+main.go: deps
+
 bindata.go: assets/main.js assets/main.css
 	go-bindata -prefix=assets/ assets/
 
@@ -14,6 +16,9 @@ assets/main.css: assets
 
 assets:
 	mkdir -p assets
+
+deps:
+	go get ./...
 
 node_modules: package.json
 	npm install
@@ -27,4 +32,4 @@ clean:
 realclean: clean
 	rm -rf node_modules
 
-.PHONY: install clean realclean
+.PHONY: install clean realclean deps
