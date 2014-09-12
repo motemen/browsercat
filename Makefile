@@ -8,7 +8,7 @@ main.go: deps
 bindata.go: assets/main.js assets/main.css
 	go-bindata -prefix=assets/ assets/
 
-assets/main.js: assets node_modules
+assets/main.js: js/main.js node_modules assets
 	$(NPM_BIN)/browserify js/main.js > assets/main.js
 
 assets/main.css: assets gems
@@ -24,7 +24,7 @@ node_modules: package.json
 	npm install
 
 gems: Gemfile
-	bundle list || bundle install
+	bundle install
 
 install: main.go bindata.go
 	go install

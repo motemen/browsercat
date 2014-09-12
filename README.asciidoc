@@ -1,0 +1,15 @@
+= browsercat
+
+'browsercat' transfers stdin to your browser.
+
+== SYNOPSIS
+
+----
+<program> | browsercat [-html]
+----
+
+== OPTIONS
+
+-html::
+    Instead of displaying the input texts as-is, treats the input as an HTML and
+    renders the HTML document given.

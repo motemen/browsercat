@@ -39,14 +39,20 @@ var display = {
   }
 };
 
+var htmlMode = /[?&]t=html(&|$)/.test(location.search);
+
 var conn = new WebSocket('ws://' + location.host + '/ws');
 conn.onmessage = function (e) {
   var message = JSON.parse(e.data);
   if (message.type === 'text') {
-    var parts = parser.add(message.data);
-    parts.forEach(function (part) {
-      display.push(part);
-    });
+    if (htmlMode) {
+      document.write(message.data);
+    } else {
+      var parts = parser.add(message.data);
+      parts.forEach(function (part) {
+        display.push(part);
+      });
+    }
   } else {
     console.log(message);
   }
