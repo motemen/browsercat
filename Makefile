@@ -1,6 +1,6 @@
 NPM_BIN = $(shell npm bin)
 
-browsercat: main.go bindata.go
+browsercat: main.go tee.go bindata.go
 	go build
 
 main.go: deps
