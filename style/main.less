@@ -1,0 +1,43 @@
+@import "colors";
+
+body {
+  color: @foreground;
+  background-color: @background;
+}
+
+.loop (@i) when (@i > 0) {
+  @name: e(extract(@colors, @i));
+  @color: @@name;
+
+  .foreground-@{name} {
+    color: @color;
+
+    .invert {
+      background-color: @color;
+      color: @background;
+
+      .no-invert {
+        color: @color;
+        background-color: @background;
+      }
+    }
+  }
+
+  .background-@{name} {
+    background-color: @color;
+
+    .invert {
+      color: @color;
+      background-color: @background;
+
+      .no-invert {
+        background-color: @color;
+        color: @background;
+      }
+    }
+  }
+
+  .loop((@i - 1))
+}
+
+.loop(length(@colors));

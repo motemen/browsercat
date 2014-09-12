@@ -9,6 +9,7 @@
     "ansi-sgr-parser": "git://github.com/motemen/ansi-sgr-parser.git"
   },
   "devDependencies": {
-    "browserify": "^5.11.1"
+    "browserify": "^5.11.1",
+    "less": "^1.7.5"
   }
 }

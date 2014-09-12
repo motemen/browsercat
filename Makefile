@@ -11,8 +11,8 @@ bindata.go: assets/main.js assets/main.css
 assets/main.js: js/main.js node_modules assets
 	$(NPM_BIN)/browserify js/main.js > assets/main.js
 
-assets/main.css: assets gems
-	bundle exec scss style/main.scss > assets/main.css
+assets/main.css: assets node_modules
+	$(NPM_BIN)/lessc style/main.less > assets/main.css
 
 assets:
 	mkdir -p assets
