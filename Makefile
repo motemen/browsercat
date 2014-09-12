@@ -23,10 +23,7 @@ deps:
 node_modules: package.json
 	npm install
 
-gems: Gemfile
-	bundle install
-
-install: main.go bindata.go
+install: main.go tee.go bindata.go
 	go install
 
 clean:
@@ -37,7 +34,6 @@ realclean: clean
 
 prerequisites:
 	which npm >/dev/null 2>&1
-	which bundle >/dev/null 2>&1
 	which go-bindata >/dev/null 2>&1 || go get github.com/jteeuwen/go-bindata/...
 
-.PHONY: install clean realclean deps prerequisites gems
+.PHONY: install clean realclean deps prerequisites
