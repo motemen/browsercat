@@ -2,3 +2,5 @@
 /browsercat
 /node_modules/
 /assets/
+/.sass-cache/
+/npm-debug.log

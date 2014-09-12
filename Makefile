@@ -11,8 +11,8 @@ bindata.go: assets/main.js assets/main.css
 assets/main.js: assets node_modules
 	$(NPM_BIN)/browserify js/main.js > assets/main.js
 
-assets/main.css: assets
-	scss style/main.scss > assets/main.css
+assets/main.css: assets gems
+	bundle exec scss style/main.scss > assets/main.css
 
 assets:
 	mkdir -p assets
@@ -23,6 +23,9 @@ deps:
 node_modules: package.json
 	npm install
 
+gems: Gemfile
+	bundle list || bundle install
+
 install: main.go bindata.go
 	go install
 
@@ -32,4 +35,9 @@ clean:
 realclean: clean
 	rm -rf node_modules
 
-.PHONY: install clean realclean deps
+prerequisites:
+	which npm >/dev/null 2>&1
+	which bundle >/dev/null 2>&1
+	which go-bindata >/dev/null 2>&1 || go get github.com/jteeuwen/go-bindata/...
+
+.PHONY: install clean realclean deps prerequisites gems
