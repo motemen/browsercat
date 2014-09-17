@@ -10,6 +10,7 @@ import (
 	"os/exec"
 
 	"code.google.com/p/go.net/websocket"
+	"github.com/docopt/docopt-go"
 )
 
 var mainHTML string
@@ -74,14 +75,49 @@ func newHTTPServer(tee *Tee) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
+var version = "0.0"
+
+var usage = `Brings stdout to browsers.
+
+Usage:
+  browsercat [--no-open] [--html]
+
+Options:
+  --no-open     Do not launch web browser automatically.
+  --html        Treat input as raw HTML rather than plain text.
+`
+
 func main() {
+	arguments, err := docopt.Parse(usage, nil, true, version, false)
+	if err != nil {
+		panic(err)
+	}
+
+	var flagNoOpen, flagHTML bool
+	if v, ok := arguments["--no-open"].(bool); ok {
+		flagNoOpen = v
+	}
+	if v, ok := arguments["--html"].(bool); ok {
+		flagHTML = v
+	}
+
 	tee := newTee()
 
 	server := newHTTPServer(tee)
 	defer server.Close()
 
-	fmt.Println(server.URL)
-	openBrowser(server.URL)
+	url := server.URL
+	if flagHTML {
+		url = url + "?t=html"
+	}
+
+	fmt.Println(url)
+
+	if flagNoOpen {
+		// nop
+	} else {
+		openBrowser(url)
+	}
 
 	n, err := io.Copy(tee, os.Stdin)
 
