@@ -1,6 +1,7 @@
 NPM_BIN = $(shell npm bin)
+SOURCES = main.go tee.go
 
-browsercat: main.go tee.go bindata.go
+browsercat: $(SOURCES) bindata.go
 	go build
 
 main.go: deps
@@ -23,7 +24,7 @@ deps:
 node_modules: package.json
 	npm install
 
-install: main.go tee.go bindata.go
+install: $(SOURCES) bindata.go
 	go install
 
 clean:
@@ -36,4 +37,7 @@ prerequisites:
 	which npm >/dev/null 2>&1
 	which go-bindata >/dev/null 2>&1 || go get github.com/jteeuwen/go-bindata/...
 
-.PHONY: install clean realclean deps prerequisites
+lint:
+	golint $(SOURCES)
+
+.PHONY: install clean realclean deps prerequisites lint
