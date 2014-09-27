@@ -33,10 +33,15 @@ type unit struct{}
 
 type chunk []byte
 
-type Message struct {
+type message struct {
 	Type string `json:"type"`
-	Data string `json:"data"`
+	Data string `json:"data,omitempty"`
 }
+
+const (
+	messageTypeText = "text"
+	messageTypeEOF  = "eof"
+)
 
 func newHTTPServer(tee *Tee) *httptest.Server {
 	mux := http.NewServeMux()
@@ -60,14 +65,20 @@ func newHTTPServer(tee *Tee) *httptest.Server {
 
 		log.Printf("websocket: new client: %s", ws.RemoteAddr())
 
-		for bytes := range ch {
-			message := Message{Type: "text", Data: string(bytes)}
-			err := websocket.JSON.Send(ws, message)
+		send := func(t string, data []byte) error {
+			msg := message{Type: t, Data: string(data)}
+			err := websocket.JSON.Send(ws, msg)
 			if err != nil {
 				log.Printf("websocket: error: %s", err)
-				break
 			}
+			return err
 		}
+
+		for bytes := range ch {
+			send(messageTypeText, bytes)
+		}
+
+		send(messageTypeEOF, nil)
 
 		tee.RemoveOutChan(ch)
 	}))

@@ -53,6 +53,8 @@ conn.onmessage = function (e) {
         display.push(part);
       });
     }
+  } else if (message.type === 'eof') {
+    document.getElementById('content').setAttribute('class', 'done');
   } else {
     console.log(message);
   }

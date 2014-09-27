@@ -5,6 +5,14 @@ body {
   background-color: @background;
 }
 
+#content {
+  &.done:after {
+    content: "[EOF]";
+    opacity: 0.6;
+    font-size: 50%;
+  }
+}
+
 .loop (@i) when (@i > 0) {
   @name: e(extract(@colors, @i));
   @color: @@name;
